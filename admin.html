@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - View Uploads</title>
+    <style>body{font-family:Arial;margin:40px;} .upload{border:1px solid #ccc;padding:20px;margin:10px 0;} img{max-width:200px;}</style>
+</head>
+<body>
+    <h1>Admin Panel - All Uploads</h1>
+    <div id="uploads"></div>
+    
+    <script>
+        const uploads = JSON.parse(localStorage.getItem('uploads') || '[]');
+        const container = document.getElementById('uploads');
+        uploads.forEach((upload, i) => {
+            const div = document.createElement('div');
+            div.className = 'upload';
+            div.innerHTML = `
+                <h3>Upload ${i+1}</h3>
+                <p>Location: ${upload.location.lat}, ${upload.location.lng}</p>
+                <img src="${upload.photo}">
+                <p>File: ${upload.fileName}</p>
+                <a href="${upload.fileData}" download="${upload.fileName}">Download File</a>
+            `;
+            container.appendChild(div);
+        });
+    </script>
+</body>
+</html>
