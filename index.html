@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS & Camera Capture</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-camera"></i> GPS & Camera Capture</h1>
+            <p class="subtitle">Allow permissions to use your camera and location.</p>
+        </header>
+
+        <main>
+            <!-- Camera Section -->
+            <section class="card">
+                <h2><i class="fas fa-video"></i> Camera</h2>
+                <div class="video-container">
+                    <video id="video" autoplay playsinline>Video stream not available.</video>
+                </div>
+                <div class="controls">
+                    <button id="start-camera" class="btn btn-primary">
+                        <i class="fas fa-play"></i> Start Camera
+                    </button>
+                    <button id="take-photo" class="btn btn-success" disabled>
+                        <i class="fas fa-camera"></i> Take Photo
+                    </button>
+                </div>
+                <div class="output">
+                    <h3>Your Photo:</h3>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    <img id="photo" src="" alt="Your captured photo will appear here.">
+                </div>
+            </section>
+
+            <!-- GPS Section -->
+            <section class="card">
+                <h2><i class="fas fa-map-marker-alt"></i> GPS Location</h2>
+                <div class="controls">
+                    <button id="get-location" class="btn btn-primary">
+                        <i class="fas fa-location-crosshairs"></i> Get My Location
+                    </button>
+                </div>
+                <div class="output">
+                    <h3>Your Location:</h3>
+                    <p id="location-status">Not yet retrieved.</p>
+                    <div id="location-data" class="hidden">
+                        <p><strong>Latitude:</strong> <span id="latitude"></span></p>
+                        <p><strong>Longitude:</strong> <span id="longitude"></span></p>
+                        <p><strong>Accuracy:</strong> <span id="accuracy"></span> meters</p>
+                        <p><strong>Map Link:</strong> <a id="map-link" target="_blank">Open in Google Maps</a></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Display Section -->
+            <section class="card summary">
+                <h2><i class="fas fa-clipboard-list"></i> Captured Data</h2>
+                <div id="data-summary">
+                    <p>Your photo and location data will be shown together here after capture.</p>
+                </div>
+                <button id="download-btn" class="btn btn-download hidden">
+                    <i class="fas fa-download"></i> Download Data as Text
+                </button>
+            </section>
+        </main>
+
+        <footer>
+            <p>This page uses your device's camera and GPS. Your data stays in your browser.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
